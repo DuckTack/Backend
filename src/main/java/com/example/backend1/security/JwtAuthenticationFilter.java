@@ -7,6 +7,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,7 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+  private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
   private final JwtTokenProvider jwtTokenProvider;
   private final CustomUserDetailsService userDetailsService;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -39,7 +42,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   ) throws ServletException, IOException {
 
     String auth = request.getHeader("Authorization");
-    System.out.println("AUTH HEADER = " + auth);
+    if (log.isDebugEnabled() && auth != null) {
+      log.debug("Authorization header present (scheme={})", auth.startsWith("Bearer ") ? "Bearer" : "Other");
+    }
 
     if (auth != null && auth.startsWith("Bearer ")) {
       try {

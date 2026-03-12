@@ -4,6 +4,7 @@ import com.example.backend1.common.ApiResponse;
 import com.example.backend1.user.dto.AuthDtos;
 import com.example.backend1.user.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,6 +26,20 @@ public class AuthController {
   @PostMapping("/login")
   public ApiResponse<AuthDtos.TokenResponse> login(@RequestBody @Valid AuthDtos.LoginRequest req) {
     return ApiResponse.ok(userService.login(req));
+  }
+
+  @PostMapping("/refresh")
+  public ApiResponse<AuthDtos.TokenResponse> refresh(@RequestBody @Valid AuthDtos.RefreshRequest req) {
+    return ApiResponse.ok(userService.refresh(req));
+  }
+
+  @PostMapping("/logout")
+  public ApiResponse<Void> logout(
+          Authentication authentication,
+          @RequestBody @Valid AuthDtos.LogoutRequest req
+  ) {
+    userService.logout(authentication.getName(), req);
+    return ApiResponse.ok("logged out", null);
   }
 
   @GetMapping("/check-username")

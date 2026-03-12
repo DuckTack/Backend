@@ -25,17 +25,20 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final AuthenticationManager authenticationManager;
   private final JwtTokenProvider jwtTokenProvider;
+  private final RefreshTokenService refreshTokenService;
 
   public UserService(
           UserRepository userRepository,
           PasswordEncoder passwordEncoder,
           AuthenticationManager authenticationManager,
-          JwtTokenProvider jwtTokenProvider
+          JwtTokenProvider jwtTokenProvider,
+          RefreshTokenService refreshTokenService
   ) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
     this.jwtTokenProvider = jwtTokenProvider;
+    this.refreshTokenService = refreshTokenService;
   }
 
   /* =========================
@@ -86,8 +89,40 @@ public class UserService {
             user.getUsername()
     );
 
+    var refresh = refreshTokenService.issue(user);
+
     log.info("User logged in: {}", req.username());
-    return new AuthDtos.TokenResponse(token);
+    return new AuthDtos.TokenResponse(
+            token,
+            refresh.refreshToken(),
+            refresh.expiresAt().toEpochSecond()
+    );
+  }
+
+  @Transactional
+  public AuthDtos.TokenResponse refresh(AuthDtos.RefreshRequest req) {
+    var current = refreshTokenService.validateActive(req.refreshToken());
+    var rotated = refreshTokenService.rotate(current);
+
+    User user = current.getUser();
+    Authentication auth = new UsernamePasswordAuthenticationToken(user.getUsername(), null, java.util.List.of());
+    String access = jwtTokenProvider.createAccessToken(auth, user.getId(), user.getUsername());
+
+    return new AuthDtos.TokenResponse(
+            access,
+            rotated.refreshToken(),
+            rotated.expiresAt().toEpochSecond()
+    );
+  }
+
+  @Transactional
+  public void logout(String username, AuthDtos.LogoutRequest req) {
+    // 본인 토큰만 revoke (타인 토큰 무효화 방지)
+    var current = refreshTokenService.validateActive(req.refreshToken());
+    if (!current.getUser().getUsername().equals(username)) {
+      throw new ApiException(ErrorCode.ACCESS_DENIED);
+    }
+    current.revoke(java.time.OffsetDateTime.now(), null);
   }
 
   /* =========================
