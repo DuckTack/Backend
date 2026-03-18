@@ -1,0 +1,41 @@
+<!-- src/main/resources/static/histories.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Histories</title>
+</head>
+<body>
+<h2>진단 이력</h2>
+<button onclick="load()">목록 조회</button>
+<input id="delIds" placeholder="삭제할 id들 (1,2,3)">
+<button onclick="del()">선택 삭제</button>
+
+<pre id="result"></pre>
+
+<script>
+    const token = localStorage.getItem("token");
+    const headers = {
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+token
+    };
+    const result = document.getElementById("result");
+
+    function load(){
+        fetch("/api/histories",{headers})
+            .then(r=>r.json())
+            .then(d=>result.textContent=JSON.stringify(d,null,2));
+    }
+
+    function del(){
+        const ids = delIds.value.split(",").map(v=>Number(v.trim()));
+        fetch("/api/histories",{
+            method:"DELETE",
+            headers,
+            body:JSON.stringify({ids})
+        }).then(r=>r.json())
+            .then(d=>result.textContent=JSON.stringify(d,null,2));
+    }
+</script>
+</body>
+</html>

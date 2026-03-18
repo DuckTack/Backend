@@ -1,67 +1,76 @@
 package com.example.backend1.user.domain;
 
 import jakarta.persistence.*;
-import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "users", indexes = {
-        @Index(name = "idx_users_username", columnList = "username", unique = true)
-})
 public class User {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, unique = true, length = 50)
   private String username;
-
-  @Column(nullable = false)
-  private String passwordHash;
-
-  @Column(nullable = false, length = 30)
+  private String password;
+  private String email;
   private String phoneNumber;
+  private String residenceType;
+  private Boolean isRenter;
 
-  @Column(length = 255)
-  private String address;
+  // 기본 생성자
+  public User() {}
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private ResidenceType residenceType = ResidenceType.ETC;
-
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private RentType rentType = RentType.NONE;
-
-  @Column(nullable = false)
-  private OffsetDateTime createdAt = OffsetDateTime.now();
-
-  protected User() {}
-
-  public User(String username, String passwordHash, String phoneNumber) {
+  // 생성자
+  public User(
+          String username,
+          String password,
+          String email,
+          String phoneNumber,
+          String residenceType,
+          Boolean isRenter
+  ) {
     this.username = username;
-    this.passwordHash = passwordHash;
+    this.password = password;
+    this.email = email;
+    this.phoneNumber = phoneNumber;
+    this.residenceType = residenceType;
+    this.isRenter = isRenter;
+  }
+
+  // 🔥 Getter (핵심)
+  public Long getId() {
+    return id;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public String getPhoneNumber() {
+    return phoneNumber;
+  }
+
+  public String getResidenceType() {
+    return residenceType;
+  }
+
+  public Boolean getIsRenter() {
+    return isRenter;
+  }
+
+  // Setter (필요한 것만)
+  public void setPhoneNumber(String phoneNumber) {
     this.phoneNumber = phoneNumber;
   }
 
-  public Long getId() { return id; }
-  public String getUsername() { return username; }
-  public String getPasswordHash() { return passwordHash; }
-  public String getPhoneNumber() { return phoneNumber; }
-  public String getAddress() { return address; }
-  public ResidenceType getResidenceType() { return residenceType; }
-  public RentType getRentType() { return rentType; }
-  public OffsetDateTime getCreatedAt() { return createdAt; }
-
-  public void updateProfile(
-          ResidenceType residenceType,
-          RentType rentType,
-          String phoneNumber,
-          String address
-  ) {
-    if (residenceType != null) this.residenceType = residenceType;
-    if (rentType != null) this.rentType = rentType;
-    if (phoneNumber != null) this.phoneNumber = phoneNumber;
-    if (address != null) this.address = address;
+  public void setResidenceType(String residenceType) {
+    this.residenceType = residenceType;
   }
 }

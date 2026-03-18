@@ -33,16 +33,25 @@ public class SecurityConfig {
                                 "/img/**"
                         ).permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        // K8s probe 용도로는 health/info 정도만 공개 권장
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
+
+                        // 🔥 auth 관련
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/check-username").permitAll()
+
+                        // 🔥 추가된 부분 (여기 넣어야 함)
+                        .requestMatchers(
+                                "/api/auth/check-email",
+                                "/api/auth/check-phone",
+                                "/api/auth/send-email-code",
+                                "/api/auth/verify-email-code"
+                        ).permitAll()
+
                         .anyRequest().authenticated()
                 );
 
-
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
