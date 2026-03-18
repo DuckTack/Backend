@@ -14,14 +14,19 @@ java {
 repositories { mavenCentral() }
 
 dependencies {
+  implementation 'org.postgresql:postgresql:42.7.3'
   implementation 'org.springframework.boot:spring-boot-starter-web'
   implementation 'org.springframework.boot:spring-boot-starter-validation'
   implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
   implementation 'org.springframework.boot:spring-boot-starter-security'
   implementation 'org.springframework.boot:spring-boot-starter-actuator'
+  implementation 'org.springframework.retry:spring-retry'
+  implementation 'org.springframework:spring-aspects'
+    // PDF (HTML -> PDF)
+    implementation 'com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10'
 
-  // MySQL
-  runtimeOnly 'com.mysql:mysql-connector-j'
+  // PostgreSQL
+  runtimeOnly 'org.postgresql:postgresql'
 
   // JWT (JJWT)
   implementation 'io.jsonwebtoken:jjwt-api:0.12.5'

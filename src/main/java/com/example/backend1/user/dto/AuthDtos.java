@@ -22,7 +22,15 @@ public class AuthDtos {
           @NotBlank String password
   ) {}
 
-  public record TokenResponse(String accessToken) {}
+  public record TokenResponse(
+          String accessToken,
+          String refreshToken,
+          long refreshExpiresAtEpochSeconds
+  ) {}
+
+  public record RefreshRequest(@NotBlank String refreshToken) {}
+
+  public record LogoutRequest(@NotBlank String refreshToken) {}
 
   public record UsernameCheckResponse(boolean available) {}
 }
