@@ -5,7 +5,9 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "users", indexes = {
-        @Index(name = "idx_users_username", columnList = "username", unique = true)
+        @Index(name = "idx_users_username", columnList = "username", unique = true),
+        @Index(name = "idx_users_email", columnList = "email", unique = true),
+        @Index(name = "idx_users_phone_number", columnList = "phoneNumber", unique = true)
 })
 public class User {
 
@@ -15,6 +17,9 @@ public class User {
 
   @Column(nullable = false, unique = true, length = 50)
   private String username;
+
+  @Column(nullable = false, unique = true, length = 255)
+  private String email;
 
   @Column(nullable = false)
   private String passwordHash;
@@ -38,14 +43,16 @@ public class User {
 
   protected User() {}
 
-  public User(String username, String passwordHash, String phoneNumber) {
+  public User(String username, String email, String passwordHash, String phoneNumber) {
     this.username = username;
+    this.email = email;
     this.passwordHash = passwordHash;
     this.phoneNumber = phoneNumber;
   }
 
   public Long getId() { return id; }
   public String getUsername() { return username; }
+  public String getEmail() { return email; }
   public String getPasswordHash() { return passwordHash; }
   public String getPhoneNumber() { return phoneNumber; }
   public String getAddress() { return address; }

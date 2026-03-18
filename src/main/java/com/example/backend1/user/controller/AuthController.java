@@ -2,6 +2,7 @@ package com.example.backend1.user.controller;
 
 import com.example.backend1.common.ApiResponse;
 import com.example.backend1.user.dto.AuthDtos;
+import com.example.backend1.user.service.EmailVerificationService;
 import com.example.backend1.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -12,9 +13,11 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
   private final UserService userService;
+  private final EmailVerificationService emailVerificationService;
 
-  public AuthController(UserService userService) {
+  public AuthController(UserService userService, EmailVerificationService emailVerificationService) {
     this.userService = userService;
+    this.emailVerificationService = emailVerificationService;
   }
 
   @PostMapping("/signup")
@@ -49,5 +52,27 @@ public class AuthController {
                     userService.isUsernameAvailable(username)
             )
     );
+  }
+
+  @GetMapping("/check-email")
+  public ApiResponse<AuthDtos.EmailCheckResponse> checkEmail(@RequestParam String email) {
+    return ApiResponse.ok(new AuthDtos.EmailCheckResponse(userService.isEmailAvailable(email)));
+  }
+
+  @GetMapping("/check-phone")
+  public ApiResponse<AuthDtos.PhoneCheckResponse> checkPhone(@RequestParam String phoneNumber) {
+    return ApiResponse.ok(new AuthDtos.PhoneCheckResponse(userService.isPhoneAvailable(phoneNumber)));
+  }
+
+  @PostMapping("/email/send-code")
+  public ApiResponse<Void> sendEmailCode(@RequestBody @Valid AuthDtos.SendEmailCodeRequest req) {
+    emailVerificationService.sendCode(req.email());
+    return ApiResponse.ok("sent", null);
+  }
+
+  @PostMapping("/email/verify-code")
+  public ApiResponse<AuthDtos.VerifyEmailCodeResponse> verifyEmailCode(@RequestBody @Valid AuthDtos.VerifyEmailCodeRequest req) {
+    boolean verified = emailVerificationService.verifyCode(req.email(), req.code());
+    return ApiResponse.ok(new AuthDtos.VerifyEmailCodeResponse(verified));
   }
 }

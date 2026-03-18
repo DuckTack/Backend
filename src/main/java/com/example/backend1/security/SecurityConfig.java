@@ -37,7 +37,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/check-username").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/check-username", "/api/auth/check-email", "/api/auth/check-phone").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/email/send-code", "/api/auth/email/verify-code").permitAll()
                         .anyRequest().authenticated()
                 );
 
