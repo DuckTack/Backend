@@ -54,3 +54,4 @@ docker compose up --build
 - **업로드**: `/api/files/upload`
 - **분석 시작(비동기)**: `/api/analysis` → diagnosisId/historyId/status 반환
 - **상태 확인**: `/api/histories/{historyId}` 또는 목록 조회로 `ANALYZING/COMPLETED/FAILED` 확인
+
