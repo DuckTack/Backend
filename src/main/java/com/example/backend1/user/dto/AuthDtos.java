@@ -1,27 +1,58 @@
 package com.example.backend1.user.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class AuthDtos {
 
-    public record SignupRequest(
-            @NotBlank @Size(min = 4, max = 50) String username,
-            @NotBlank @Size(min = 8, max = 72) String password,
+  public record SignupRequest(
+          @NotBlank @Size(min = 4, max = 50) String username,
+          @NotBlank @Size(min = 8, max = 72) String password,
+          @NotBlank
+          @Pattern(
+                  regexp = "^[0-9\\-+() ]{8,20}$",
+                  message = "전화번호 형식이 올바르지 않습니다."
+          )
+          String phoneNumber,
+          @NotBlank
+          String email
+  ) {}
+
+  public record LoginRequest(
+          @NotBlank String username,
+          @NotBlank String password
+  ) {}
+
+  public record TokenResponse(
+          String accessToken,
+          String refreshToken,
+          long refreshExpiresAtEpochSeconds
+  ) {}
+    // 이메일 중복 체크
+    public record EmailCheckResponse(boolean available) {}
+
+    // 전화번호 중복 체크
+    public record PhoneCheckResponse(boolean available) {}
+
+    // 이메일 인증 코드 발송 요청
+    public record SendEmailCodeRequest(
+            @NotBlank String email
+    ) {}
+
+    // 이메일 인증 코드 검증 요청
+    public record VerifyEmailCodeRequest(
             @NotBlank String email,
-            String phoneNumber,
-            @NotBlank String residenceType,
-            Boolean isRenter,
-            Boolean emailVerified
+            @NotBlank String code
     ) {}
 
-    public record LoginRequest(
-            @NotBlank String username,
-            @NotBlank String password
-    ) {}
+    // 이메일 인증 결과 응답
+    public record VerifyEmailCodeResponse(boolean verified) {}
+  public record RefreshRequest(@NotBlank String refreshToken) {}
 
-    public record TokenResponse(
-            String accessToken
-    ) {}
+  public record LogoutRequest(@NotBlank String refreshToken) {}
+
+  public record UsernameCheckResponse(boolean available) {}
+
+
 }
-
