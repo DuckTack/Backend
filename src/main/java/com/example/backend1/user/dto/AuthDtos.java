@@ -16,7 +16,9 @@ public class AuthDtos {
                   regexp = "^[0-9\\-+() ]{8,20}$",
                   message = "전화번호 형식이 올바르지 않습니다."
           )
-          String phoneNumber
+          String phoneNumber,
+          @NotBlank
+          String email
   ) {}
 
   public record LoginRequest(
@@ -29,13 +31,34 @@ public class AuthDtos {
           String refreshToken,
           long refreshExpiresAtEpochSeconds
   ) {}
+    // 이메일 중복 체크
+    public record EmailCheckResponse(boolean available) {}
 
+    // 전화번호 중복 체크
+    public record PhoneCheckResponse(boolean available) {}
+
+    // 이메일 인증 코드 발송 요청
+    public record SendEmailCodeRequest(
+            @NotBlank String email
+    ) {}
+
+    // 이메일 인증 코드 검증 요청
+    public record VerifyEmailCodeRequest(
+            @NotBlank String email,
+            @NotBlank String code
+    ) {}
+
+    // 이메일 인증 결과 응답
+    public record VerifyEmailCodeResponse(boolean verified) {}
   public record RefreshRequest(@NotBlank String refreshToken) {}
 
   public record LogoutRequest(@NotBlank String refreshToken) {}
 
   public record UsernameCheckResponse(boolean available) {}
 
+<<<<<<< HEAD
+
+=======
   public record EmailCheckResponse(boolean available) {}
 
   public record PhoneCheckResponse(boolean available) {}
@@ -48,4 +71,5 @@ public class AuthDtos {
   ) {}
 
   public record VerifyEmailCodeResponse(boolean verified) {}
+>>>>>>> 54853b61a9ad007f59f1bc6b2ecbd171b008dcd6
 }
