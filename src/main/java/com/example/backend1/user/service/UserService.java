@@ -26,19 +26,22 @@ public class UserService {
   private final AuthenticationManager authenticationManager;
   private final JwtTokenProvider jwtTokenProvider;
   private final RefreshTokenService refreshTokenService;
+  private final EmailVerificationService emailVerificationService;
 
   public UserService(
           UserRepository userRepository,
           PasswordEncoder passwordEncoder,
           AuthenticationManager authenticationManager,
           JwtTokenProvider jwtTokenProvider,
-          RefreshTokenService refreshTokenService
+          RefreshTokenService refreshTokenService,
+          EmailVerificationService emailVerificationService
   ) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.authenticationManager = authenticationManager;
     this.jwtTokenProvider = jwtTokenProvider;
     this.refreshTokenService = refreshTokenService;
+    this.emailVerificationService = emailVerificationService;
   }
 
   /* =========================
@@ -49,12 +52,22 @@ public class UserService {
     if (userRepository.existsByUsername(req.username())) {
       throw new ApiException(ErrorCode.USERNAME_DUPLICATE);
     }
+    if (userRepository.existsByEmail(req.email())) {
+      throw new ApiException(ErrorCode.EMAIL_DUPLICATE);
+    }
+    if (userRepository.existsByPhoneNumber(req.phoneNumber())) {
+      throw new ApiException(ErrorCode.PHONE_DUPLICATE);
+    }
+    if (!emailVerificationService.isVerified(req.email())) {
+      throw new ApiException(ErrorCode.EMAIL_VERIFICATION_REQUIRED);
+    }
 
     String hash = passwordEncoder.encode(req.password());
 
     userRepository.save(
             new User(
                     req.username(),
+                    req.email(),
                     hash,
                     req.phoneNumber()
             )
@@ -69,6 +82,16 @@ public class UserService {
   @Transactional(readOnly = true)
   public boolean isUsernameAvailable(String username) {
     return !userRepository.existsByUsername(username);
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isEmailAvailable(String email) {
+    return !userRepository.existsByEmail(email);
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isPhoneAvailable(String phoneNumber) {
+    return !userRepository.existsByPhoneNumber(phoneNumber);
   }
 
   /* =========================
