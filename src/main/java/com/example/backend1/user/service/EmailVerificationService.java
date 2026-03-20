@@ -52,7 +52,6 @@ public class EmailVerificationService {
 
     emailVerificationRepository.save(new EmailVerification(email, hash, expiresAt));
 
-    // If mail is not configured, log the code for local/dev usage.
     if (mailHost == null || mailHost.isBlank()) {
       log.warn("MAIL_HOST not set. Email verification code for {} is {}", email, code);
       return;
@@ -105,4 +104,3 @@ public class EmailVerificationService {
     return String.format("%06d", n);
   }
 }
-

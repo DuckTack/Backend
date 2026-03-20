@@ -69,7 +69,8 @@ public class UserService {
                     req.username(),
                     req.email(),
                     hash,
-                    req.phoneNumber()
+                    req.phoneNumber(),
+                    req.email()
             )
     );
 
@@ -97,7 +98,7 @@ public class UserService {
   /* =========================
      로그인
      ========================= */
-  @Transactional(readOnly = true)
+  @Transactional
   public AuthDtos.TokenResponse login(AuthDtos.LoginRequest req) {
     Authentication auth = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(req.username(), req.password())
@@ -166,6 +167,15 @@ public class UserService {
     );
   }
 
+  @Transactional(readOnly = true)
+  public boolean isEmailAvailable(String email) {
+    return !userRepository.existsByEmail(email);
+  }
+
+  @Transactional(readOnly = true)
+  public boolean isPhoneAvailable(String phoneNumber) {
+    return !userRepository.existsByPhoneNumber(phoneNumber);
+  }
   /* =========================
      프로필 수정
      ========================= */
