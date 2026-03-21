@@ -45,23 +45,8 @@ public class AuthController {
     return ApiResponse.ok("logged out", null);
   }
 
-  @PostMapping("/email/send-code")
-  public ApiResponse<Void> sendEmailCode(
-          @RequestBody @Valid AuthDtos.SendEmailCodeRequest req
-  ) {
-    // TODO: 이메일 코드 발송 로직
-    return ApiResponse.ok("email code sent", null);
-  }
 
-  @PostMapping("/email/verify-code")
-  public ApiResponse<AuthDtos.VerifyEmailCodeResponse> verifyEmailCode(
-          @RequestBody @Valid AuthDtos.VerifyEmailCodeRequest req
-  ) {
-    // TODO: 코드 검증 로직
-    return ApiResponse.ok(
-            new AuthDtos.VerifyEmailCodeResponse(true)
-    );
-  }
+
 
   @GetMapping("/check-username")
   public ApiResponse<AuthDtos.UsernameCheckResponse> checkUsername(@RequestParam String username) {
