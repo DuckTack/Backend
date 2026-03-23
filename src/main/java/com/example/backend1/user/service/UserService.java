@@ -55,9 +55,9 @@ public class UserService {
         if (userRepository.existsByPhoneNumber(req.phoneNumber())) {
             throw new ApiException(ErrorCode.PHONE_DUPLICATE);
         }
-        if (!emailVerificationService.isVerified(req.email())) {
-            throw new ApiException(ErrorCode.EMAIL_VERIFICATION_REQUIRED);
-        }
+        //if (!emailVerificationService.isVerified(req.email())) {
+        //    throw new ApiException(ErrorCode.EMAIL_VERIFICATION_REQUIRED);
+        //}
 
         String hash = passwordEncoder.encode(req.password());
 
@@ -66,7 +66,10 @@ public class UserService {
                         req.username(),
                         req.email(),
                         hash,
-                        req.phoneNumber()
+                        req.phoneNumber(),
+                        req.residenceType(),
+                        req.rentType(),
+                        req.address()
                 )
         );
 
@@ -75,7 +78,9 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public boolean isUsernameAvailable(String username) {
-        return !userRepository.existsByUsername(username);
+        boolean exists = userRepository.existsByUsername(username);
+        System.out.println("username=" + username + " exists=" + exists);
+        return !exists;
     }
 
     @Transactional(readOnly = true)

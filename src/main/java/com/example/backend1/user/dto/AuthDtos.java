@@ -1,22 +1,41 @@
 package com.example.backend1.user.dto;
 
+import com.example.backend1.user.domain.RentType;
+import com.example.backend1.user.domain.ResidenceType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotNull;
 
 public class AuthDtos {
 
     public record SignupRequest(
-            @NotBlank @Size(min = 4, max = 50) String username,
-            @NotBlank @Email @Size(max = 255) String email,
-            @NotBlank @Size(min = 8, max = 72) String password,
+            @NotBlank @Size(min = 4, max = 50)
+            String username,
+
+            @NotBlank @Email @Size(max = 255)
+            String email,
+
+            @NotBlank @Size(min = 8, max = 72)
+            String password,
+
             @NotBlank
             @Pattern(
                     regexp = "^[0-9\\-+() ]{8,20}$",
                     message = "전화번호 형식이 올바르지 않습니다."
             )
-            String phoneNumber
+            String phoneNumber,
+
+            @NotNull
+            ResidenceType residenceType,
+
+            @NotNull
+            RentType rentType,
+
+            String address,
+
+            Boolean emailVerified
     ) {}
 
     public record LoginRequest(

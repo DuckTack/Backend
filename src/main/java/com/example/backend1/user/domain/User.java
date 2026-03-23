@@ -43,11 +43,15 @@ public class User {
 
     protected User() {}
 
-    public User(String username, String email, String passwordHash, String phoneNumber) {
+    public User(String username, String email, String passwordHash, String phoneNumber,
+                ResidenceType residenceType, RentType rentType, String address) {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
         this.phoneNumber = phoneNumber;
+        this.residenceType = residenceType;
+        this.rentType = rentType;
+        this.address = address;
     }
 
     public Long getId() { return id; }
