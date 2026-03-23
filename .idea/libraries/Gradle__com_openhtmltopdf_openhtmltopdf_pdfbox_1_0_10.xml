@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="com.openhtmltopdf" artifactId="openhtmltopdf-pdfbox" version="1.0.10" baseVersion="1.0.10" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.openhtmltopdf/openhtmltopdf-pdfbox/1.0.10/4041442fda47e760985cea8005d51a830031420f/openhtmltopdf-pdfbox-1.0.10.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

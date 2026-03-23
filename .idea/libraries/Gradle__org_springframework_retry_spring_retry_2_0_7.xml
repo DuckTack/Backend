@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: org.springframework.retry:spring-retry:2.0.7" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="org.springframework.retry" artifactId="spring-retry" version="2.0.7" baseVersion="2.0.7" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.springframework.retry/spring-retry/2.0.7/f7b22a785a35cf0927277dceb5db1c6de1d6259b/spring-retry-2.0.7.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
