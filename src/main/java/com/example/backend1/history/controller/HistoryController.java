@@ -77,9 +77,13 @@ public class HistoryController {
           Authentication authentication,
           @PathVariable Long id
   ) {
-    return ApiResponse.ok(
-            historyService.detail(authentication.getName(), id)
-    );
+      if (authentication == null) {
+          throw new RuntimeException("인증 없음");
+      }
+
+      return ApiResponse.ok(
+              historyService.detail(authentication.getName(), id)
+      );
   }
 
   /* =========================
