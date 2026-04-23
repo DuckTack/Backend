@@ -74,7 +74,6 @@ public class UserService {
                         req.residenceType(),
                         req.rentType(),
                         req.address(),
-
                         req.termsAgreed(),
                         req.privacyAgreed(),
                         req.marketingAgreed() != null && req.marketingAgreed()
@@ -90,9 +89,9 @@ public class UserService {
         log.debug("isUsernameAvailable: username={} exists={}", username, exists);
         return !exists;
     }
+
     @Transactional
     public void resetPassword(AuthDtos.ResetPasswordRequest req) {
-
         boolean verified = emailVerificationService.verifyCode(req.email(), req.code());
         if (!verified) {
             throw new ApiException(ErrorCode.EMAIL_VERIFICATION_INVALID);
@@ -104,7 +103,6 @@ public class UserService {
         String hash = passwordEncoder.encode(req.newPassword());
         user.changePassword(hash);
 
-        // 🔥 핵심
         userRepository.saveAndFlush(user);
     }
 
@@ -120,37 +118,33 @@ public class UserService {
 
     @Transactional
     public AuthDtos.TokenResponse login(AuthDtos.LoginRequest req) {
+        User user = userRepository.findByUsername(req.username())
+                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-            // 🔥 여기 추가
-            User user = userRepository.findByUsername(req.username())
-                    .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+        log.info("입력 PW: [{}]", req.password());
+        log.info("MATCH 결과: {}", passwordEncoder.matches(req.password(), user.getPasswordHash()));
 
-            log.info("입력 PW: [{}]", req.password());
-            log.info("DB HASH: {}", user.getPasswordHash());
-            log.info("MATCH 결과: {}", passwordEncoder.matches(req.password(), user.getPasswordHash()));
+        Authentication auth = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(req.username(), req.password())
+        );
 
-            // 기존 코드
-            Authentication auth = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(req.username(), req.password())
-            );
+        String token = jwtTokenProvider.createAccessToken(
+                auth,
+                user.getId(),
+                user.getUsername()
+        );
 
-            String token = jwtTokenProvider.createAccessToken(
-                    auth,
-                    user.getId(),
-                    user.getUsername()
-            );
+        var refresh = refreshTokenService.issue(user);
 
-            var refresh = refreshTokenService.issue(user);
+        log.info("User logged in: {}", req.username());
 
-            log.info("User logged in: {}", req.username());
-
-            return new AuthDtos.TokenResponse(
-                    token,
-                    refresh.refreshToken(),
-                    refresh.expiresAt().toEpochSecond(),
-                    user.getRole().name()
-            );
-        }
+        return new AuthDtos.TokenResponse(
+                token,
+                refresh.refreshToken(),
+                refresh.expiresAt().toEpochSecond(),
+                user.getRole().name()
+        );
+    }
 
     @Transactional
     public AuthDtos.TokenResponse refresh(AuthDtos.RefreshRequest req) {
@@ -183,6 +177,7 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
+        // 병합 포인트: email 필드 추가 반환
         return new UserDtos.MeResponse(
                 user.getId(),
                 user.getUsername(),
@@ -208,6 +203,7 @@ public class UserService {
 
         log.info("Profile updated: {}", username);
 
+        // 병합 포인트: 수정 후 email 포함하여 반환
         return new UserDtos.MeResponse(
                 user.getId(),
                 user.getUsername(),
