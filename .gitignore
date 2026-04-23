@@ -1,0 +1,8 @@
+
+# --- added by 창완 ---
+storage/
+src/main/resources/application.yml
+.idea/
+.gradle/
+build/
+*.iml
