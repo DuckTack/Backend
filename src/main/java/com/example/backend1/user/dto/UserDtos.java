@@ -7,21 +7,27 @@ import jakarta.validation.constraints.Pattern;
 
 public class UserDtos {
 
-  public record MeResponse(
-          Long id,
-          String username,
-          String email,
-          String phoneNumber,
-          String address,
-          ResidenceType residenceType,
-          RentType rentType
-  ) {}
-
-    public record UpdateProfileRequest(
-            String username,   // 추가
+    // 내 정보 응답: 팀원 코드의 email 필드 유지
+    public record MeResponse(
+            Long id,
+            String username,
             String email,
-            @NotNull ResidenceType residenceType,
-            @NotNull RentType rentType,
+            String phoneNumber,
+            String address,
+            ResidenceType residenceType,
+            RentType rentType
+    ) {}
+
+    // 프로필 수정 요청: 팀원 코드의 username, email 필드 유지
+    public record UpdateProfileRequest(
+            String username,
+            String email,
+
+            @NotNull
+            ResidenceType residenceType,
+
+            @NotNull
+            RentType rentType,
 
             @Pattern(
                     regexp = "^[0-9\\-+() ]{8,20}$",

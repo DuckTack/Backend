@@ -31,7 +31,10 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/storage/**",
-                                "/api/files/**"
+                                "/api/files/**",
+                                // ⚠ DEV 전용: 카카오/네이버 외부 API 연결 상태를 브라우저에서 바로 확인.
+                                //   운영 배포 시 이 항목은 제거하거나 ADMIN 전용으로 바꿀 것.
+                                "/api/dev/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
