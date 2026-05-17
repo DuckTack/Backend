@@ -39,13 +39,16 @@ public class CompanyDtos {
     // ⭐ 좌표/거리 필드를 boxed Double 로 변경: 관리자가 좌표 없이 등록한 제휴 업체도
     //    "거리 정보 없음" 상태로 노출할 수 있도록 null 허용.
     public record NearbyCompanyResponse(
-            Long id,               // 제휴 업체인 경우 ID, 아니면 null
-            String name,           // 업체명
+            Long id,               // 제휴 업체인 경우 DB PK, 아니면 null
+            String name,
             String phone,
             String address,
-            Double latitude,       // null 가능 (관리자 수동 등록 시 좌표 미입력일 때)
-            Double longitude,      // null 가능
-            Double distanceKm,     // null 가능 (좌표가 없어 거리 계산 불가한 제휴 업체)
-            boolean isPartner      // 제휴 업체 여부 (우선순위용)
+            Double latitude,
+            Double longitude,
+            Double distanceKm,
+            boolean isPartner,     // 제휴 업체 여부 (우선순위용)
+            String kakaoPlaceId,   // 카카오 place.id (카카오 업체일 때만 존재)
+            Double avgRating,      // null = 리뷰 없음
+            Integer reviewCount
     ) {}
 }

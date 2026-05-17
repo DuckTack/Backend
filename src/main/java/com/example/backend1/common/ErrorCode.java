@@ -20,7 +20,9 @@ public enum ErrorCode {
   DIAGNOSIS_NOT_FOUND(HttpStatus.NOT_FOUND, "DIAGNOSIS_NOT_FOUND", "진단을 찾을 수 없습니다."),
   COMPANY_NOT_FOUND(HttpStatus.NOT_FOUND, "COMPANY_NOT_FOUND", "업체를 찾을 수 없습니다."),
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "서버 오류가 발생했습니다."),
-  PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "물품을 찾을 수 없습니다.");
+  PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "물품을 찾을 수 없습니다."),
+  REVIEW_DUPLICATE(HttpStatus.CONFLICT, "REVIEW_DUPLICATE", "이미 이 업체에 리뷰를 작성했습니다."),
+  REVIEW_INVALID_TARGET(HttpStatus.BAD_REQUEST, "REVIEW_INVALID_TARGET", "companyId 또는 kakaoPlaceId+kakaoPlaceName 중 하나는 필수입니다.");
   private final HttpStatus status;
   private final String code;
   private final String message;

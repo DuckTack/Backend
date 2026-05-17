@@ -12,13 +12,21 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "companies", indexes = {
-        @Index(name = "idx_companies_active", columnList = "active")
+        @Index(name = "idx_companies_active", columnList = "active"),
+        @Index(name = "idx_companies_kakao_place_id", columnList = "kakao_place_id", unique = true)
 })
 public class Company {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @Column(name = "kakao_place_id", length = 50, unique = true)
+  private String kakaoPlaceId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 10)
+  private CompanySource source = CompanySource.ADMIN;
 
   @Column(nullable = false, length = 200)
   private String name;
@@ -83,6 +91,18 @@ public class Company {
 
   public Company(String name) {
     this.name = name;
+  }
+
+  public static Company fromKakao(String kakaoPlaceId, String name, String phone,
+                                  String address, Double lat, Double lng) {
+    Company c = new Company(name);
+    c.kakaoPlaceId = kakaoPlaceId;
+    c.source = CompanySource.KAKAO;
+    c.phone = phone;
+    c.addressLine = address;
+    c.latitude = lat;
+    c.longitude = lng;
+    return c;
   }
 
   public Long getId() { return id; }
