@@ -147,7 +147,8 @@ public class ExpertService {
         }
         if (coverage.isEmpty()) coverage.add("전국");
 
-        double rating = (stats != null && stats.reviewCount() > 0) ? stats.avgRating() : 0.0;
+        // 리뷰가 없으면 null (프론트 formatRating 이 null → "리뷰 없음" 표시)
+        Double avgRating = (stats != null && stats.reviewCount() > 0) ? stats.avgRating() : null;
         int reviewCount = (stats != null) ? stats.reviewCount() : 0;
 
         Integer min = c.getMinEstimatedQuoteKrw();
@@ -159,7 +160,7 @@ public class ExpertService {
                 : capNote;
 
         return new ExpertDtos.ExpertVendor(
-                c.getId(), name, rating, reviewCount, minPrice, max,
+                c.getId(), name, avgRating, reviewCount, minPrice, max,
                 phone, intro, coverage, addressLine, serviceRegion,
                 null
         );

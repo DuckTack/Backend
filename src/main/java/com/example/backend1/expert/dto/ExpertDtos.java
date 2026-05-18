@@ -8,15 +8,15 @@ import java.util.List;
  * - minPrice, maxPrice: minEstimatedQuoteKrw / maxEstimatedQuoteKrw 매핑
  * - intro: capabilityNote 대체
  * - coverageAreas: serviceRegionLabel 파싱
- * - rating, reviewCount: 현재 DB 컬럼이 없어 일단 합성값(결정론적 해시 기반)으로 제공.
- *   추후 Company 엔티티에 실제 컬럼이 추가되면 이 DTO만 그대로 두고 service 쪽만 교체하면 됨.
+ * - avgRating: 리뷰 없으면 null, 있으면 소수점 1자리 평균 (프론트 normalizeVendor 가 raw.avgRating 으로 읽음)
+ * - reviewCount: 실제 리뷰 수
  */
 public class ExpertDtos {
 
     public record ExpertVendor(
             Long id,
             String name,
-            double rating,
+            Double avgRating,    // null = 리뷰 없음. 프론트가 raw.avgRating 으로 읽는다.
             int reviewCount,
             int minPrice,
             Integer maxPrice,

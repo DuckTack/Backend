@@ -192,7 +192,7 @@ public class CompanyService {
         // ─── 4. 제휴 업체 우선 → 거리순 ────────────────────────────────────────
         return combined.stream()
                 .sorted(Comparator
-                        .comparing(CompanyDtos.NearbyCompanyResponse::isPartner).reversed()
+                        .comparing(CompanyDtos.NearbyCompanyResponse::partner).reversed()
                         .thenComparing(CompanyDtos.NearbyCompanyResponse::distanceKm,
                                 Comparator.nullsLast(Comparator.naturalOrder())))
                 .collect(Collectors.toList());
@@ -223,7 +223,7 @@ public class CompanyService {
             if (stats == null) return r;
             return new CompanyDtos.NearbyCompanyResponse(
                     r.id(), r.name(), r.phone(), r.address(),
-                    r.latitude(), r.longitude(), r.distanceKm(), r.isPartner(),
+                    r.latitude(), r.longitude(), r.distanceKm(), r.partner(),
                     r.kakaoPlaceId(), stats.avgRating(), stats.reviewCount()
             );
         }).collect(Collectors.toList());
