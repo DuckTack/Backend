@@ -4,6 +4,8 @@ import com.example.backend1.company.domain.Company;
 import com.example.backend1.company.repo.CompanyRepository;
 import com.example.backend1.diagnosis.domain.IssueType;
 import com.example.backend1.expert.dto.ExpertDtos;
+import com.example.backend1.review.dto.ReviewDtos;
+import com.example.backend1.review.service.ReviewService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,9 +32,11 @@ import java.util.stream.Collectors;
 public class ExpertService {
 
     private final CompanyRepository companyRepository;
+    private final ReviewService reviewService;
 
-    public ExpertService(CompanyRepository companyRepository) {
+    public ExpertService(CompanyRepository companyRepository, ReviewService reviewService) {
         this.companyRepository = companyRepository;
+        this.reviewService = reviewService;
     }
 
     @Transactional(readOnly = true)
@@ -51,11 +56,19 @@ public class ExpertService {
         final IssueType issueType = parseIssueType(issueTypeRaw);
         final String normalizedRegion = (region == null) ? "" : region.trim();
 
-        List<ExpertDtos.ExpertVendor> result = companies.stream()
+        List<Company> filtered = companies.stream()
                 .filter(Objects::nonNull)
                 .filter(c -> matchesRegion(c, normalizedRegion))
                 .filter(c -> matchesIssueType(c, issueType))
-                .map(this::toVendor)
+                .collect(Collectors.toList());
+
+        // 리뷰 통계 batch 조회
+        List<Long> ids = filtered.stream()
+                .map(Company::getId).filter(Objects::nonNull).collect(Collectors.toList());
+        Map<Long, ReviewDtos.ReviewStats> statsMap = reviewService.getSummaryByCompanyIds(ids);
+
+        List<ExpertDtos.ExpertVendor> result = filtered.stream()
+                .map(c -> toVendor(c, statsMap.get(c.getId())))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
@@ -116,7 +129,7 @@ public class ExpertService {
         }
     }
 
-    private ExpertDtos.ExpertVendor toVendor(Company c) {
+    private ExpertDtos.ExpertVendor toVendor(Company c, ReviewDtos.ReviewStats stats) {
         if (c == null) return null;
 
         String name = nullToEmpty(c.getName());
@@ -125,7 +138,6 @@ public class ExpertService {
         String serviceRegion = nullToEmpty(c.getServiceRegionLabel());
         String capNote = c.getCapabilityNote();
 
-        // coverageAreas: "서울 강남구, 서초구" 같은 자유 텍스트에서 최대한 안전하게 토큰화
         List<String> coverage = new ArrayList<>();
         if (!serviceRegion.isBlank()) {
             for (String part : serviceRegion.split("[,/·|]+")) {
@@ -135,11 +147,9 @@ public class ExpertService {
         }
         if (coverage.isEmpty()) coverage.add("전국");
 
-        // rating / reviewCount: DB 컬럼이 아직 없음 → 결정론적 합성값으로 채워 UI가 깨지지 않도록 한다.
-        // (동일한 업체는 항상 동일한 값을 보이도록 id 해시 기반)
-        long idForSeed = c.getId() == null ? 0L : c.getId();
-        double rating = 4.0 + Math.abs((int)(idForSeed * 2654435761L) % 10) / 10.0; // 4.0 ~ 4.9
-        int reviewCount = Math.abs((int)(idForSeed * 2246822519L) % 200);            // 0 ~ 199
+        // 리뷰가 없으면 null (프론트 formatRating 이 null → "리뷰 없음" 표시)
+        Double avgRating = (stats != null && stats.reviewCount() > 0) ? stats.avgRating() : null;
+        int reviewCount = (stats != null) ? stats.reviewCount() : 0;
 
         Integer min = c.getMinEstimatedQuoteKrw();
         Integer max = c.getMaxEstimatedQuoteKrw();
@@ -150,18 +160,9 @@ public class ExpertService {
                 : capNote;
 
         return new ExpertDtos.ExpertVendor(
-                c.getId(),
-                name,
-                Math.round(rating * 10.0) / 10.0,
-                reviewCount,
-                minPrice,
-                max,
-                phone,
-                intro,
-                coverage,
-                addressLine,
-                serviceRegion,
-                null // distanceKm 은 프론트에서 /api/companies/nearby 결과로 merge
+                c.getId(), name, avgRating, reviewCount, minPrice, max,
+                phone, intro, coverage, addressLine, serviceRegion,
+                null
         );
     }
 
