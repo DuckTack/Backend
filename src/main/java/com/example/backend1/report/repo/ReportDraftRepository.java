@@ -7,5 +7,9 @@ import java.util.Optional;
 
 public interface ReportDraftRepository extends JpaRepository<ReportDraft, Long> {
 
-    /** diagnosisId 로 드래프트 조회 (진단 1개당 드래프트 최대 1개) */
-    Optional<ReportDraft> findByDiagnosis_Id(Long diagnosisId);}
+    /** 구 파이프라인: diagnosisId 로 드래프트 조회 */
+    Optional<ReportDraft> findByDiagnosis_Id(Long diagnosisId);
+
+    /** 새 파이프라인: diagnosisResultId 로 드래프트 조회 */
+    Optional<ReportDraft> findByDiagnosisResult_Id(Long diagnosisResultId);
+}

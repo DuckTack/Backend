@@ -2,6 +2,7 @@ package com.example.backend1.history.service;
 
 import com.example.backend1.diagnosis.domain.AnalysisStatus;
 import com.example.backend1.diagnosis.domain.Diagnosis;
+import com.example.backend1.diagnosis.domain.DiagnosisResult;
 import com.example.backend1.diagnosis.domain.IssueType;
 import com.example.backend1.user.domain.User;
 import jakarta.persistence.*;
@@ -21,8 +22,14 @@ public class HistoryEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    /** 구 파이프라인 진단 (nullable - 새 파이프라인은 diagnosisResult 사용) */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     private Diagnosis diagnosis;
+
+    /** 새 파이프라인 진단 결과 (nullable - 구 파이프라인은 diagnosis 사용) */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "diagnosis_result_id")
+    private DiagnosisResult diagnosisResult;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -64,17 +71,38 @@ public class HistoryEntity {
         this.createdAt = OffsetDateTime.now();
     }
 
+    /** 새 파이프라인: DiagnosisResult 기반으로 생성 */
+    public HistoryEntity(User user, DiagnosisResult result) {
+        this.user = user;
+        this.diagnosisResult = result;
+        this.status = AnalysisStatus.COMPLETED;
+        // DiagnosisResult.riskScore 는 0.0~1.0 스케일 → 0~100 으로 변환
+        this.riskScore = result.getRiskScore() != null ? (int) Math.round(result.getRiskScore() * 100) : 0;
+        this.issueType = result.getIssueType() != null ? result.getIssueType() : IssueType.ETC;
+        this.createdAt = result.getCreatedAt();
+    }
+
     public Long getId() { return id; }
     public User getUser() { return user; }
     public Diagnosis getDiagnosis() { return diagnosis; }
+    public DiagnosisResult getDiagnosisResult() { return diagnosisResult; }
     public AnalysisStatus getStatus() { return status; }
     public Integer getRiskScore() { return riskScore; }
     public IssueType getIssueType() { return issueType; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
 
+    /** diagnosisId: 새 파이프라인이면 diagnosisResult.id, 구 파이프라인이면 diagnosis.id */
+    public Long resolveDiagnosisId() {
+        if (diagnosisResult != null) return diagnosisResult.getId();
+        if (diagnosis != null) return diagnosis.getId();
+        return null;
+    }
+
     public void refreshFromDiagnosis() {
-        this.status = diagnosis.getStatus();
-        this.riskScore = diagnosis.getRiskScore();
-        this.issueType = diagnosis.getIssueType();
+        if (diagnosis != null) {
+            this.status = diagnosis.getStatus();
+            this.riskScore = diagnosis.getRiskScore();
+            this.issueType = diagnosis.getIssueType();
+        }
     }
 }

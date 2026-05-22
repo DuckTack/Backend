@@ -85,9 +85,7 @@ public class HistoryService {
     Page<HistoryEntity> page = historyRepository.findAll(spec, pageable);
 
     return page.map(h -> {
-      Long diagnosisId = (h.getDiagnosis() != null)
-              ? h.getDiagnosis().getId()
-              : null;
+      Long diagnosisId = h.resolveDiagnosisId();
 
       return new HistoryDtos.HistoryItem(
               h.getId(),
@@ -112,20 +110,31 @@ public class HistoryService {
             .filter(x -> x.getUser().getId().equals(user.getId()))
             .orElseThrow(() -> new ApiException(ErrorCode.HISTORY_NOT_FOUND));
 
-    var report = (h.getDiagnosis() != null)
-            ? h.getDiagnosis().getReport()
-            : null;
+    HistoryDtos.ReportMeta meta = null;
+    if (h.getDiagnosis() != null && h.getDiagnosis().getReport() != null) {
+        // 구 파이프라인: Diagnosis.report
+        var report = h.getDiagnosis().getReport();
+        meta = new HistoryDtos.ReportMeta(
+                report.getStorageKey(),
+                report.getContentType(),
+                report.getSizeBytes()
+        );
+    } else if (h.getDiagnosisResult() != null && h.getDiagnosisResult().getPdfStorageKey() != null) {
+        // 새 파이프라인: DiagnosisResult.pdfStorageKey
+        meta = new HistoryDtos.ReportMeta(
+                h.getDiagnosisResult().getPdfStorageKey(),
+                "application/pdf",
+                0L
+        );
+    }
 
-    HistoryDtos.ReportMeta meta = (report == null) ? null
-            : new HistoryDtos.ReportMeta(
-            report.getStorageKey(),
-            report.getContentType(),
-            report.getSizeBytes()
-    );
+    Long diagnosisId = h.resolveDiagnosisId();
 
-    Long diagnosisId = (h.getDiagnosis() != null)
-            ? h.getDiagnosis().getId()
-            : null;
+    // 진단 이미지 URL: 새 파이프라인(DiagnosisResult) 우선, 없으면 null
+    String imageUrl = null;
+    if (h.getDiagnosisResult() != null) {
+        imageUrl = h.getDiagnosisResult().getImageUrl();
+    }
 
     return new HistoryDtos.HistoryDetail(
             h.getId(),
@@ -134,7 +143,8 @@ public class HistoryService {
             h.getRiskScore(),
             h.getIssueType(),
             h.getCreatedAt(),
-            meta
+            meta,
+            imageUrl
     );
   }
 

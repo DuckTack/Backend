@@ -4,34 +4,28 @@ import com.example.backend1.ai.DecisionService;
 import com.example.backend1.common.ApiException;
 import com.example.backend1.common.ErrorCode;
 import com.example.backend1.diagnosis.domain.Diagnosis;
+import com.example.backend1.diagnosis.domain.DiagnosisResult;
 import com.example.backend1.diagnosis.domain.ReportMetadata;
 import com.example.backend1.diagnosis.repo.DiagnosisRepository;
+import com.example.backend1.diagnosis.repo.DiagnosisResultRepository;
 import com.example.backend1.report.dto.ReportDraftDto;
 import com.example.backend1.report.entity.ReportDraft;
 import com.example.backend1.report.repo.ReportDraftRepository;
 import com.example.backend1.storage.*;
+import com.example.backend1.user.domain.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.imageio.ImageIO;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.List;
-
-
 
 @Service
 @Transactional
 public class ReportService {
 
     private final DiagnosisRepository diagnosisRepository;
+    private final DiagnosisResultRepository diagnosisResultRepository;
     private final ReportDraftRepository reportDraftRepository;
     private final ReportRenderer reportRenderer;
     private final PdfService pdfService;
@@ -41,6 +35,7 @@ public class ReportService {
 
     public ReportService(
             DiagnosisRepository diagnosisRepository,
+            DiagnosisResultRepository diagnosisResultRepository,
             ReportDraftRepository reportDraftRepository,
             ReportRenderer reportRenderer,
             PdfService pdfService,
@@ -49,6 +44,7 @@ public class ReportService {
             FileRecordRepository fileRecordRepository
     ) {
         this.diagnosisRepository = diagnosisRepository;
+        this.diagnosisResultRepository = diagnosisResultRepository;
         this.reportDraftRepository = reportDraftRepository;
         this.reportRenderer = reportRenderer;
         this.pdfService = pdfService;
@@ -58,9 +54,23 @@ public class ReportService {
     }
 
     // =========================
+    // 내부 헬퍼: 두 파이프라인 통합 조회
+    // =========================
+    private record DiagnosisCtx(Diagnosis diagnosis, DiagnosisResult diagnosisResult, User user) {
+        boolean isNewPipeline() { return diagnosisResult != null; }
+    }
+
+    private DiagnosisCtx resolveCtx(String username, Long id) {
+        Optional<Diagnosis> d = diagnosisRepository.findByIdAndUserUsername(id, username);
+        if (d.isPresent()) return new DiagnosisCtx(d.get(), null, d.get().getUser());
+        DiagnosisResult dr = diagnosisResultRepository.findByIdAndUserUsername(id, username)
+                .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
+        return new DiagnosisCtx(null, dr, dr.getUser());
+    }
+
+    // =========================
     // PDF 생성
     // =========================
-
     @Transactional
     public ReportMetadata generateAndAttach(
             Long diagnosisId,
@@ -74,33 +84,25 @@ public class ReportService {
         Diagnosis diagnosis = diagnosisRepository.findById(diagnosisId)
                 .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
 
-        ReportDraft draft = reportDraftRepository
-                .findByDiagnosis_Id(diagnosisId)
-                .orElse(null);
 
-        // ✅ base64 변환
-        List<String> beforeImages = Optional.ofNullable(draft)
-                .map(ReportDraft::getBeforeImageUris)
-                .orElse(Collections.emptyList())
+        // ⭐ 기존 코드 유지 + 아래만 추가
+        ReportDraft draft = reportDraftRepository.findByDiagnosis_Id(diagnosisId).orElse(null);
+        System.out.println("PDF용 draft: " + draft);
+// ⭐ BEFORE 이미지
+        List<String> beforeImages = fileRecordRepository
+                .findByDiagnosisIdAndCategory(diagnosisId, FileCategory.BEFORE_IMAGE)
                 .stream()
-                .map(this::convertToBase64)
-                .filter(Objects::nonNull)
+                .map(f -> fileStorage.getPublicUrl(f.getStorageKey()))
                 .toList();
 
-        List<String> afterImages = Optional.ofNullable(draft)
-                .map(ReportDraft::getAfterImageUris)
-                .orElse(Collections.emptyList())
+// ⭐ AFTER 이미지
+        List<String> afterImages = fileRecordRepository
+                .findByDiagnosisIdAndCategory(diagnosisId, FileCategory.AFTER_IMAGE)
                 .stream()
-                .map(this::convertToBase64)
-                .filter(Objects::nonNull)
+                .map(f -> fileStorage.getPublicUrl(f.getStorageKey()))
                 .toList();
 
-        System.out.println("🔥 BEFORE images = " + beforeImages);
-        System.out.println("🔥 AFTER images = " + afterImages);
-        System.out.println("🔥 BEFORE count = " + beforeImages.size());
-        System.out.println("🔥 AFTER count = " + afterImages.size());
-
-        // ✅ HTML 생성 (여기가 핵심 연결 지점)
+// ⭐ 기존 toHtml 호출만 교체
         String html = reportRenderer.toHtml(
                 diagnosis,
                 summary,
@@ -145,11 +147,17 @@ public class ReportService {
         System.out.println("🔥 username = " + username);
         System.out.println("🔥 diagnosisId = " + diagnosisId);
         System.out.println("🔥 req = " + req);
-        Diagnosis diagnosis = diagnosisRepository.findByIdAndUserUsername(diagnosisId, username)
-                .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
 
-        ReportDraft draft = reportDraftRepository.findByDiagnosis_Id(diagnosisId)
-                .orElseGet(() -> reportDraftRepository.save(new ReportDraft(diagnosis)));
+        DiagnosisCtx ctx = resolveCtx(username, diagnosisId);
+
+        ReportDraft draft;
+        if (ctx.isNewPipeline()) {
+            draft = reportDraftRepository.findByDiagnosisResult_Id(diagnosisId)
+                    .orElseGet(() -> reportDraftRepository.save(new ReportDraft(ctx.diagnosisResult())));
+        } else {
+            draft = reportDraftRepository.findByDiagnosis_Id(diagnosisId)
+                    .orElseGet(() -> reportDraftRepository.save(new ReportDraft(ctx.diagnosis())));
+        }
         System.out.println("🔥 draft 있음? " + draft);
 
         // ⭐ repairDate → LocalDate 변환
@@ -175,11 +183,7 @@ public class ReportService {
                 req.diyMaterialCost(),
                 req.diyWorkMemo()
         );
-        draft.setBeforeImageUris(req.beforeImageUris());
-        draft.setAfterImageUris(req.afterImageUris());
 
-        System.out.println("🔥 저장된 BEFORE = " + draft.getBeforeImageUris());
-        System.out.println("🔥 저장된 AFTER = " + draft.getAfterImageUris());
 
         // ⭐ totalCost 따로
         draft.setTotalCost(req.totalCost());
@@ -195,14 +199,21 @@ public class ReportService {
     // =========================
     @Transactional(readOnly = true)
     public String getPdfPublicUrl(String username, Long diagnosisId) {
-        Diagnosis diagnosis = diagnosisRepository.findByIdAndUserUsername(diagnosisId, username)
-                .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
+        DiagnosisCtx ctx = resolveCtx(username, diagnosisId);
 
-        if (diagnosis.getReport() == null) {
-            throw new ApiException(ErrorCode.INVALID_INPUT, "PDF가 아직 생성되지 않았습니다.");
+        if (ctx.isNewPipeline()) {
+            DiagnosisResult dr = ctx.diagnosisResult();
+            if (dr.getPdfStorageKey() == null) {
+                throw new ApiException(ErrorCode.INVALID_INPUT, "PDF가 아직 생성되지 않았습니다.");
+            }
+            return fileStorage.getPublicUrl(dr.getPdfStorageKey());
+        } else {
+            Diagnosis diagnosis = ctx.diagnosis();
+            if (diagnosis.getReport() == null) {
+                throw new ApiException(ErrorCode.INVALID_INPUT, "PDF가 아직 생성되지 않았습니다.");
+            }
+            return fileService.getOwnedPublicUrl(username, diagnosis.getReport().getStorageKey());
         }
-
-        return fileService.getOwnedPublicUrl(username, diagnosis.getReport().getStorageKey());
     }
 
     // =========================
@@ -210,11 +221,14 @@ public class ReportService {
     // =========================
     @Transactional(readOnly = true)
     public ReportDraftDto.DraftResponse getDraft(String username, Long diagnosisId) {
-        Diagnosis diagnosis = diagnosisRepository.findByIdAndUserUsername(diagnosisId, username)
-                .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
+        DiagnosisCtx ctx = resolveCtx(username, diagnosisId);
 
-// ✅ 수정
-        ReportDraft draft = reportDraftRepository.findByDiagnosis_Id(diagnosisId).orElse(null);
+        ReportDraft draft;
+        if (ctx.isNewPipeline()) {
+            draft = reportDraftRepository.findByDiagnosisResult_Id(diagnosisId).orElse(null);
+        } else {
+            draft = reportDraftRepository.findByDiagnosis_Id(diagnosisId).orElse(null);
+        }
         return toDraftResponse(diagnosisId, draft);
     }
 
@@ -223,14 +237,21 @@ public class ReportService {
     // =========================
     @Transactional(readOnly = true)
     public byte[] downloadByDiagnosisId(String username, Long diagnosisId) {
-        Diagnosis diagnosis = diagnosisRepository.findByIdAndUserUsername(diagnosisId, username)
-                .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
+        DiagnosisCtx ctx = resolveCtx(username, diagnosisId);
 
-        if (diagnosis.getReport() == null) {
-            throw new ApiException(ErrorCode.INVALID_INPUT, "PDF 없음");
+        if (ctx.isNewPipeline()) {
+            DiagnosisResult dr = ctx.diagnosisResult();
+            if (dr.getPdfStorageKey() == null) {
+                throw new ApiException(ErrorCode.INVALID_INPUT, "PDF 없음");
+            }
+            return fileService.load(dr.getPdfStorageKey());
+        } else {
+            Diagnosis diagnosis = ctx.diagnosis();
+            if (diagnosis.getReport() == null) {
+                throw new ApiException(ErrorCode.INVALID_INPUT, "PDF 없음");
+            }
+            return fileService.load(diagnosis.getReport().getStorageKey());
         }
-
-        return fileService.load(diagnosis.getReport().getStorageKey());
     }
 
     // =========================
@@ -262,37 +283,59 @@ public class ReportService {
     }
     public List<String> uploadImages(String username, Long diagnosisId, List<MultipartFile> files, String type) {
 
-        Diagnosis diagnosis = diagnosisRepository.findByIdAndUserUsername(diagnosisId, username)
-                .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
+        DiagnosisCtx ctx = resolveCtx(username, diagnosisId);
+        User user = ctx.user();
 
-        FileCategory category;
+        FileCategory category =
+                type.equals("AFTER") ? FileCategory.AFTER_IMAGE : FileCategory.BEFORE_IMAGE;
 
-        if (type == null) {
-            throw new IllegalArgumentException("type is null");
-        }
-
-        if ("AFTER".equalsIgnoreCase(type.trim())) {
-            category = FileCategory.AFTER_IMAGE;
-        } else if ("BEFORE".equalsIgnoreCase(type.trim())) {
-            category = FileCategory.BEFORE_IMAGE;
-        } else {
-            throw new IllegalArgumentException("Invalid type: " + type);
-        }
         List<String> keys = new ArrayList<>();
 
         for (MultipartFile file : files) {
-
             StoredFile saved = fileStorage.save(file);
-
-            FileRecord record = new FileRecord(diagnosis.getUser(), category, saved, diagnosisId);
-
+            FileRecord record = new FileRecord(user, category, saved, diagnosisId);
             fileRecordRepository.save(record);
-
             keys.add(saved.key());
         }
 
         return keys;
     }
+    // =========================
+    // 프론트 생성 PDF 업로드
+    // =========================
+    @Transactional
+    public Map<String, Object> uploadFrontendPdf(String username, Long diagnosisId, MultipartFile file) {
+        DiagnosisCtx ctx = resolveCtx(username, diagnosisId);
+
+        StoredFile saved = fileStorage.save(file);
+        String publicUrl = fileStorage.getPublicUrl(saved.key());
+
+        if (ctx.isNewPipeline()) {
+            // 새 파이프라인: DiagnosisResult 에 PDF 정보 저장
+            DiagnosisResult dr = ctx.diagnosisResult();
+            dr.attachPdf(saved.key(), publicUrl);
+            diagnosisResultRepository.save(dr);
+        } else {
+            // 구 파이프라인: Diagnosis.report 에 저장
+            Diagnosis diagnosis = ctx.diagnosis();
+            ReportMetadata metadata;
+            if (diagnosis.getReport() != null) {
+                metadata = diagnosis.getReport();
+                metadata.update(saved.key(), saved.contentType(), saved.sizeBytes());
+            } else {
+                metadata = new ReportMetadata(saved.key(), saved.contentType(), saved.sizeBytes());
+                diagnosis.attachReport(metadata);
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("storageKey", saved.key());
+        result.put("url", publicUrl);
+        result.put("contentType", saved.contentType());
+        result.put("sizeBytes", saved.sizeBytes());
+        return result;
+    }
+
     // =========================
     // 상태 맵
     // =========================
@@ -316,15 +359,19 @@ public class ReportService {
     }
 
     // =========================
-    // 자동 생성
+    // 자동 생성 (구 파이프라인 전용)
     // =========================
     @Transactional
     public void generateForUser(String username, Long diagnosisId) {
         System.out.println("🔥 GENERATE API 들어옴");
         System.out.println("🔥 generate username = " + username);
         System.out.println("🔥 generate diagnosisId = " + diagnosisId);
-        Diagnosis diagnosis = diagnosisRepository.findByIdAndUserUsername(diagnosisId, username)
-                .orElseThrow(() -> new ApiException(ErrorCode.DIAGNOSIS_NOT_FOUND));
+        // 새 파이프라인은 서버 PDF 생성 없이 프론트 PDF 업로드 사용
+        DiagnosisCtx ctx = resolveCtx(username, diagnosisId);
+        if (ctx.isNewPipeline()) {
+            throw new ApiException(ErrorCode.INVALID_INPUT, "새 파이프라인은 프론트 PDF 업로드를 사용하세요.");
+        }
+        Diagnosis diagnosis = ctx.diagnosis();
 
         DecisionService.Estimate estimate = buildEstimateFromRisk(diagnosis.getRiskScore());
         String decision = diagnosis.getRiskScore() >= 70 ? "PRO" : "DIY";
@@ -367,8 +414,8 @@ public class ReportService {
                 draft.getDiyMaterialsUsed(),
                 draft.getDiyMaterialCost(),
                 draft.getDiyWorkMemo(),
-                draft.getBeforeImageUris(),
-                draft.getAfterImageUris(),
+                null,
+                null,
                 draft.getUpdatedAt() != null ? draft.getUpdatedAt().toLocalDateTime() : null
         );
     }
@@ -377,36 +424,5 @@ public class ReportService {
         if (riskScore >= 70) return new DecisionService.Estimate("HIGH", 70000, 150000);
         if (riskScore >= 40) return new DecisionService.Estimate("MEDIUM", 30000, 70000);
         return new DecisionService.Estimate("LOW", 10000, 30000);
-    }
-
-    // =========================
-// 이미지 변환
-// =========================
-    private String convertToBase64(String key) {
-        try {
-            byte[] bytes = fileStorage.load(key);
-
-            // 🔥 여기 추가
-            System.out.println("🔥 key = " + key);
-            System.out.println("🔥 size = " + bytes.length);
-
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
-
-            if (image == null) {
-                System.out.println("❌ 이미지 null: " + key);
-                return null;
-            }
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(image, "jpg", baos);
-
-            return "data:image/jpeg;base64," +
-                    Base64.getEncoder().encodeToString(baos.toByteArray());
-
-        } catch (Exception e) {
-            System.out.println("❌ 변환 실패: " + key);
-            e.printStackTrace();
-            return null;
-        }
     }
 }

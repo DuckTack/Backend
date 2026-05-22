@@ -31,7 +31,6 @@ public class ReportRenderer {
             List<String> afterImages
     ) {
         Context context = new Context();
-
         context.setVariable("diagnosis", diagnosis);
         context.setVariable("summary", summary);
         context.setVariable("confidence", confidence);
@@ -40,10 +39,8 @@ public class ReportRenderer {
         context.setVariable("cautionNotes", cautionNotes);
         context.setVariable("estimate", estimate);
         context.setVariable("draft", draft);
-
-        // ✅ 핵심: base64 그대로 넣기 (절대 file: 붙이지 말 것)
-        context.setVariable("beforeImages", beforeImages == null ? List.of() : beforeImages);
-        context.setVariable("afterImages", afterImages == null ? List.of() : afterImages);
+        context.setVariable("beforeImages", beforeImages);
+        context.setVariable("afterImages", afterImages);
 
         return templateEngine.process("report", context);
     }
@@ -57,17 +54,6 @@ public class ReportRenderer {
             List<String> cautionNotes,
             DecisionService.Estimate estimate
     ) {
-        return toHtml(
-                diagnosis,
-                summary,
-                confidence,
-                decision,
-                reasons,
-                cautionNotes,
-                estimate,
-                null,
-                List.of(),
-                List.of()
-        );
+        return toHtml(diagnosis, summary, confidence, decision, reasons, cautionNotes, estimate, null, List.of(), List.of());
     }
 }

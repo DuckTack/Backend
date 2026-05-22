@@ -1,12 +1,11 @@
 package com.example.backend1.report.entity;
 
 import com.example.backend1.diagnosis.domain.Diagnosis;
+import com.example.backend1.diagnosis.domain.DiagnosisResult;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 사용자가 수리 완료 후 입력하는 후입력 정보(드래프트).
@@ -19,9 +18,15 @@ public class ReportDraft {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "diagnosis_id", unique = true, nullable = false)
+    /** 구 파이프라인 진단 (새 파이프라인은 null) */
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "diagnosis_id", unique = true, nullable = true)
     private Diagnosis diagnosis;
+
+    /** 새 파이프라인 진단 결과 (구 파이프라인은 null) */
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "diagnosis_result_id", unique = true, nullable = true)
+    private DiagnosisResult diagnosisResult;
 
     /** 수리 방식 (DIY / PRO) */
     @Column(length = 200)
@@ -82,8 +87,14 @@ public class ReportDraft {
         this.diagnosis = diagnosis;
     }
 
+    /** 새 파이프라인용 생성자 */
+    public ReportDraft(DiagnosisResult diagnosisResult) {
+        this.diagnosisResult = diagnosisResult;
+    }
+
     public Long getId() { return id; }
     public Diagnosis getDiagnosis() { return diagnosis; }
+    public DiagnosisResult getDiagnosisResult() { return diagnosisResult; }
     public String getRepairMethod() { return repairMethod; }
     public LocalDate getCompletionDate() { return completionDate; }
     public String getContractorName() { return contractorName; }
@@ -132,32 +143,4 @@ public class ReportDraft {
 
         this.updatedAt = OffsetDateTime.now();
     }
-
-       @ElementCollection
-    @CollectionTable(name = "report_draft_before_images", joinColumns = @JoinColumn(name = "report_draft_id"))
-    @Column(name = "image_uri")
-    private List<String> beforeImageUris = new ArrayList<>();
-
-    @ElementCollection
-    @CollectionTable(name = "report_draft_after_images", joinColumns = @JoinColumn(name = "report_draft_id"))
-    @Column(name = "image_uri")
-    private List<String> afterImageUris = new ArrayList<>();
-
-    public List<String> getBeforeImageUris() {
-        return beforeImageUris;
-    }
-
-    public List<String> getAfterImageUris() {
-        return afterImageUris;
-    }
-
-    public void setBeforeImageUris(List<String> beforeImageUris) {
-        this.beforeImageUris = beforeImageUris;
-    }
-
-    public void setAfterImageUris(List<String> afterImageUris) {
-        this.afterImageUris = afterImageUris;
-    }
-
-
 }
