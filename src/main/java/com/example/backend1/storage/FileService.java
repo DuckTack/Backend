@@ -18,9 +18,7 @@ public class FileService {
         this.fileRecordRepository = fileRecordRepository;
         this.userRepository = userRepository;
     }
-    public String getPublicUrl(String key) {
-        return storage.getPublicUrl(key); // ⭐ 이걸로 변경
-    }
+
     @Transactional
     public StoredFile saveUploads(String username, MultipartFile file) {
         var user = userRepository.findByUsername(username)

@@ -27,7 +27,9 @@ public class HistoryDtos {
       Integer riskScore,
       IssueType issueType,
       OffsetDateTime createdAt,
-      ReportMeta report
+      ReportMeta report,
+      /** 진단 이미지 공개 URL (DiagnosisResult.imageUrl). 프론트 리포트 페이지에서 "수리 전 사진" 자동 반영용 */
+      String imageUrl
   ) {}
 
   public record BulkDeleteRequest(@NotEmpty List<Long> ids) {}

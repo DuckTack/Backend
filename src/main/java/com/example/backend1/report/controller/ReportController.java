@@ -127,4 +127,19 @@ public class ReportController {
     public ApiResponse<?> statusMap(Authentication authentication) {
         return ApiResponse.ok(reportService.getStatusMap(authentication.getName()));
     }
+
+    // =========================
+    // 프론트 생성 PDF 업로드
+    // =========================
+    @PostMapping(value = "/diagnosis/{diagnosisId}/frontend-pdf", consumes = "multipart/form-data")
+    public ApiResponse<java.util.Map<String, Object>> uploadFrontendPdf(
+            Authentication authentication,
+            @PathVariable Long diagnosisId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "templateVersion", required = false) String templateVersion
+    ) {
+        return ApiResponse.ok(
+                reportService.uploadFrontendPdf(authentication.getName(), diagnosisId, file)
+        );
+    }
 }

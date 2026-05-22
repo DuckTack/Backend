@@ -42,23 +42,25 @@
 <h2>예상 견적</h2>
 <p><b>수준</b>: <span th:text="${estimate != null ? estimate.level() : 'UNKNOWN'}"></span></p>
 <p><b>범위</b>: <span th:text="${estimate != null ? estimate.minWon() : 0}"></span>원 ~ <span th:text="${estimate != null ? estimate.maxWon() : 0}"></span>원</p>
+
 <hr />
 <h2>수리 전 이미지</h2>
 <div th:if="${beforeImages != null and !beforeImages.isEmpty()}">
-    <div th:each="img : ${beforeImages}">
-        <img th:src="${img}" style="width:300px; margin:5px;" />
-    </div>
+    <img th:each="img : ${beforeImages}"
+         th:src="${img}"
+         style="width:300px; margin:5px;" />
 </div>
 <p th:if="${beforeImages == null or beforeImages.isEmpty()}">이미지 없음</p>
 
 <hr />
 <h2>수리 후 이미지</h2>
 <div th:if="${afterImages != null and !afterImages.isEmpty()}">
-    <div th:each="img : ${afterImages}">
-        <img th:src="${img}" style="width:300px; margin:5px;" />
-    </div>
-</div>
+    <img th:each="img : ${afterImages}"
+         th:src="${img}"
+         style="width:300px; margin:5px;" />
+</div>z
 <p th:if="${afterImages == null or afterImages.isEmpty()}">이미지 없음</p>
+
 <div th:if="${draft != null}">
     <hr />
     <h2>수리 후 기록 (사용자 입력)</h2>

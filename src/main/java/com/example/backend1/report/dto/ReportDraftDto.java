@@ -1,12 +1,14 @@
 package com.example.backend1.report.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class ReportDraftDto {
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record DraftRequest(
             String repairMethod,
 

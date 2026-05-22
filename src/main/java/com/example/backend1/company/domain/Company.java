@@ -12,13 +12,21 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "companies", indexes = {
-        @Index(name = "idx_companies_active", columnList = "active")
+        @Index(name = "idx_companies_active", columnList = "active"),
+        @Index(name = "idx_companies_kakao_place_id", columnList = "kakao_place_id", unique = true)
 })
 public class Company {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @Column(name = "kakao_place_id", length = 50, unique = true)
+  private String kakaoPlaceId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 10)
+  private CompanySource source = CompanySource.ADMIN;
 
   @Column(nullable = false, length = 200)
   private String name;
@@ -85,7 +93,30 @@ public class Company {
     this.name = name;
   }
 
+  public static Company fromKakao(String kakaoPlaceId, String name, String phone,
+                                  String address, Double lat, Double lng) {
+    Company c = new Company(name);
+    c.kakaoPlaceId = kakaoPlaceId;
+    c.source = CompanySource.KAKAO;
+    c.phone = phone;
+    c.addressLine = address;
+    c.latitude = lat;
+    c.longitude = lng;
+    return c;
+  }
+
+  /** 카카오 업체 정보가 비어있을 때 리뷰 요청으로 채워 넣는 경량 업데이트 */
+  public void updateFromKakao(String phone, String addressLine, Double latitude, Double longitude) {
+    if (phone != null && !phone.isBlank() && (this.phone == null || this.phone.isBlank())) this.phone = phone;
+    if (addressLine != null && !addressLine.isBlank() && (this.addressLine == null || this.addressLine.isBlank())) this.addressLine = addressLine;
+    if (latitude != null && this.latitude == null) this.latitude = latitude;
+    if (longitude != null && this.longitude == null) this.longitude = longitude;
+    this.updatedAt = OffsetDateTime.now();
+  }
+
   public Long getId() { return id; }
+  public String getKakaoPlaceId() { return kakaoPlaceId; }
+  public CompanySource getSource() { return source; }
   public String getName() { return name; }
   public String getBusinessRegistrationNumber() { return businessRegistrationNumber; }
   public String getRepresentativeName() { return representativeName; }

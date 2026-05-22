@@ -4,17 +4,13 @@ import com.example.backend1.user.domain.User;
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "diagnosis", indexes = {
-        @Index(name = "idx_diagnosis_user_created", columnList = "user_id, createdAt")
+    @Index(name = "idx_diagnosis_user_created", columnList = "user_id, createdAt")
 })
 public class Diagnosis {
-
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -24,17 +20,8 @@ public class Diagnosis {
   @Column(nullable = false)
   private AnalysisStatus status = AnalysisStatus.ANALYZING;
 
-  // 🔥 수리 전 이미지 (진단 시 자동 저장)
-  @ElementCollection
-  @CollectionTable(
-          name = "diagnosis_before_images",
-          joinColumns = @JoinColumn(name = "diagnosis_id")
-  )
-  @Column(name = "image_key")
-  private List<String> beforeImageKeys = new ArrayList<>();
-
   @Column(nullable = false)
-  private Integer riskScore = 0;
+  private Integer riskScore = 0; // 0~100
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -43,10 +30,7 @@ public class Diagnosis {
   @Column(nullable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
 
-  @OneToOne(mappedBy = "diagnosis",
-          cascade = CascadeType.ALL,
-          orphanRemoval = true,
-          fetch = FetchType.LAZY)
+  @OneToOne(mappedBy = "diagnosis", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private ReportMetadata report;
 
   protected Diagnosis() {}
@@ -55,7 +39,6 @@ public class Diagnosis {
     this.user = user;
   }
 
-  // ================== getter ==================
   public Long getId() { return id; }
   public User getUser() { return user; }
   public AnalysisStatus getStatus() { return status; }
@@ -63,9 +46,7 @@ public class Diagnosis {
   public IssueType getIssueType() { return issueType; }
   public OffsetDateTime getCreatedAt() { return createdAt; }
   public ReportMetadata getReport() { return report; }
-  public List<String> getBeforeImageKeys() { return beforeImageKeys; }
 
-  // ================== business ==================
   public void updateFromAiResult(AnalysisStatus status, Integer riskScore, IssueType issueType) {
     if (status != null) this.status = status;
     if (riskScore != null) this.riskScore = riskScore;
@@ -75,13 +56,5 @@ public class Diagnosis {
   public void attachReport(ReportMetadata report) {
     this.report = report;
     if (report != null) report.attach(this);
-  }
-
-  // 🔥 before 이미지 설정
-  public void setBeforeImageKeys(List<String> beforeImageKeys) {
-    this.beforeImageKeys.clear();
-    if (beforeImageKeys != null) {
-      this.beforeImageKeys.addAll(beforeImageKeys);
-    }
   }
 }

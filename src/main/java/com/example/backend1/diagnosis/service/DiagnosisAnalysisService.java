@@ -40,25 +40,21 @@ public class DiagnosisAnalysisService {
     @Transactional
     public StartResult start(String username, List<String> imageKeys) {
 
-        System.out.println("🔥 start 호출됨");
-        System.out.println("🔥 imageKeys = " + imageKeys);
-
         var user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        // ✅ Diagnosis 생성 (이미지는 여기서 관리 안함)
-        Diagnosis diagnosis = new Diagnosis(user);
-        diagnosisRepository.save(diagnosis);
+        // 1. Diagnosis 생성
+        Diagnosis diagnosis = diagnosisRepository.save(new Diagnosis(user));
 
-        // ✅ History 생성
+        // 2. History 생성
         HistoryEntity history = historyRepository.save(new HistoryEntity(user, diagnosis));
-
-        // ✅ AI 분석 실행
+        diagnosisRepository.flush();
+        // 3. 비동기 분석 실행
         analysisJobService.run(
                 username,
                 diagnosis.getId(),
                 history.getId(),
-                imageKeys // 있어도 되고 없어도 됨
+                imageKeys
         );
 
         return new StartResult(
