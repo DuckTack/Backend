@@ -1,0 +1,96 @@
+# =========================
+# Gradle / Spring Boot
+# =========================
+.gradle/
+build/
+out/
+target/
+
+# =========================
+# Node / Frontend if exists
+# =========================
+node_modules/
+.expo/
+dist/
+.next/
+
+# =========================
+# IDE
+# =========================
+.idea/
+*.iml
+.vscode/
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.*
+!.env.example
+
+**/application-local.yml
+**/application-secret.yml
+**/application-prod.yml
+**/application-dev.yml
+
+# application.yml은 실제 비밀값 없으면 올려도 됨
+# 실제 비번/API KEY가 있으면 환경변수 방식으로 바꿔야 함
+
+# =========================
+# Docker local volumes / DB data
+# =========================
+postgres-data/
+db-data/
+data/
+pgdata/
+
+# =========================
+# Upload / Generated files
+# =========================
+storage/
+uploads/
+reports/
+files/
+
+# =========================
+# AI model weights
+# =========================
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Compiled
+# =========================
+*.class
+*.war
+*.jar
+
+# Gradle wrapper jar must be committed
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# =========================
+# Claude
+# =========================
+.claude/
