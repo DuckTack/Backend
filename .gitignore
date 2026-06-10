@@ -94,3 +94,9 @@ Thumbs.db
 # Claude
 # =========================
 .claude/
+
+.env
+docker-compose.yml
+Backend/src/main/resources/application.yml
+Backend/src/main/java/com/example/backend1/config/AdminBootstrapRunner.java
+Backend/src/main/java/com/example/backend1/user/service/UserService.java

@@ -138,7 +138,7 @@ public class ReservationService {
         if (exists) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "이미 해당 시간대에 진행 중인 예약이 있습니다. 다른 시간을 선택해주세요."
+                    "이미 다른 사용자가 예약했습니다. 다른 시간대를 이용해주세요."
             );
         }
 
